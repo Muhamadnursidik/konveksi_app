@@ -1,26 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../controllers/pemotong_controller.dart';
+import '../../../controllers/finishing_controller.dart';
 import '../../../controllers/auth_controller.dart';
 import '../../../core/services/token_service.dart';
 import 'tabs/dashboard_tab.dart';
 import 'tabs/job_tab.dart';
-import 'tabs/bahan_baku_tab.dart';
 import 'tabs/riwayat_tab.dart';
 
-class PemotongHome extends StatelessWidget {
-  const PemotongHome({super.key});
+class FinishingHome extends StatelessWidget {
+  const FinishingHome({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.find<PemotongController>();
+    final c = Get.find<FinishingController>();
     final auth = Get.find<AuthController>();
 
     final tabs = [
-      const DashboardTab(),
-      const JobTab(),
-      const BahanBakuTab(),
-      const RiwayatTab(),
+      const FinishingDashboardTab(),
+      const FinishingJobTab(),
+      const FinishingRiwayatTab(),
     ];
 
     return Scaffold(
@@ -104,11 +102,7 @@ class PemotongHome extends StatelessWidget {
           child: Container(height: 1, color: const Color(0xFFE2E8F0)),
         ),
       ),
-
-      // Body
       body: Obx(() => tabs[c.navIndex.value]),
-
-      // Bottom Navigation
       bottomNavigationBar: Obx(
         () => NavigationBar(
           selectedIndex: c.navIndex.value,
@@ -117,7 +111,6 @@ class PemotongHome extends StatelessWidget {
           surfaceTintColor: Colors.transparent,
           indicatorColor: const Color(0xFFEEF2FF),
           height: 65,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.dashboard_outlined),
@@ -125,14 +118,9 @@ class PemotongHome extends StatelessWidget {
               label: 'Dashboard',
             ),
             NavigationDestination(
-              icon: Icon(Icons.content_cut_outlined),
-              selectedIcon: Icon(Icons.content_cut, color: Color(0xFF4F46E5)),
-              label: 'Job Potong',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.layers_outlined),
-              selectedIcon: Icon(Icons.layers, color: Color(0xFF4F46E5)),
-              label: 'Bahan Baku',
+              icon: Icon(Icons.dry_cleaning_outlined),
+              selectedIcon: Icon(Icons.dry_cleaning, color: Color(0xFF4F46E5)),
+              label: 'Job Finishing',
             ),
             NavigationDestination(
               icon: Icon(Icons.history_outlined),

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:get/get.dart';
-// import 'package:flutter/material.dart';
 import '../core/network/http_client.dart';
 import '../core/constants/api_constants.dart';
 import '../core/services/token_service.dart';
@@ -9,7 +8,7 @@ import '../app/routes/app_routes.dart';
 
 class AuthController extends GetxController {
   final isLoading = false.obs;
-  final Rx<UserModel?> user = Rx(null);
+  final Rx<UserModel?> user = Rx<UserModel?>(null);
 
   Future<void> login(String email, String password) async {
     if (email.isEmpty || password.isEmpty) {
@@ -22,27 +21,33 @@ class AuthController extends GetxController {
 
       final res = await ApiClient.post(
         ApiConstants.login,
-        body: {'email': email, 'password': password},
+        body: {
+          'email': email,
+          'password': password,
+        },
         withAuth: false,
       );
 
       final data = jsonDecode(res.body);
 
-      // controllers/auth_controller.dart
-      // Ganti bagian setelah saveSession:
-
       if (res.statusCode == 200) {
+        final userData = data['user'];
+
+        final loggedUser = UserModel.fromJson(userData);
+
+        // simpan ke state
+        user.value = loggedUser;
+
         await TokenService.saveSession(
           token: data['token'],
-          userId: data['user']['id'].toString(),
-          name: data['user']['name'],
-          email: data['user']['email'],
-          role: data['user']['role'],
+          userId: loggedUser.id.toString(),
+          name: loggedUser.name,
+          email: loggedUser.email,
+          role: loggedUser.role,
+          photo: loggedUser.photo, 
         );
 
-        // ✅ Redirect berdasarkan role
-        final role = data['user']['role'] as String;
-        switch (role) {
+        switch (loggedUser.role) {
           case 'pemotong':
             Get.offAllNamed('/pemotong');
             break;
@@ -53,8 +58,13 @@ class AuthController extends GetxController {
             Get.offAllNamed('/finishing');
             break;
           default:
-            Get.snackbar('Error', 'Role tidak dikenali: $role');
+            Get.snackbar('Error', 'Role tidak dikenali: ${loggedUser.role}');
         }
+      } else {
+        Get.snackbar(
+          'Login Gagal',
+          data['message'] ?? 'Terjadi kesalahan',
+        );
       }
     } catch (e) {
       Get.snackbar('Error', 'Tidak dapat terhubung ke server');
@@ -67,9 +77,10 @@ class AuthController extends GetxController {
     try {
       await ApiClient.post(ApiConstants.logout);
     } catch (_) {
-      // Tetap lanjut logout meski request gagal
+      // tetap lanjut walaupun API gagal
     } finally {
       await TokenService.clearSession();
+      user.value = null;
       Get.offAllNamed(AppRoutes.login);
     }
   }

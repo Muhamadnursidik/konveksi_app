@@ -3,12 +3,14 @@ class UserModel {
   final String name;
   final String email;
   final String role;
+   final String? photo;
 
   UserModel({
     required this.id,
     required this.name,
     required this.email,
     required this.role,
+    this.photo,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> j) => UserModel(
@@ -16,6 +18,7 @@ class UserModel {
     name:  j['name'],
     email: j['email'],
     role:  j['role'],
+    photo: j['photo'],
   );
 
   // Label role yang lebih ramah

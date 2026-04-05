@@ -9,27 +9,22 @@ import 'package:image_picker/image_picker.dart';
 import '../core/constants/api_constants.dart';
 import '../core/services/token_service.dart';
 import '../models/job_model.dart';
-import '../models/riwayat_model.dart';
-import '../models/stats_model.dart';
-import '../models/bahan_baku_model.dart';
+import '../models/penjahit_stats_model.dart';
+import '../models/penjahit_riwayat_model.dart';
 
-class PemotongController extends GetxController {
-  final isLoadingJobs     = false.obs;
-  final isLoadingRiwayat  = false.obs;
-  final isLoadingStats    = false.obs;
-  final isLoadingBahan    = false.obs;
-  final isUploading       = false.obs;
+class PenjahitController extends GetxController {
+  final isLoadingJobs    = false.obs;
+  final isLoadingRiwayat = false.obs;
+  final isLoadingStats   = false.obs;
+  final isUploading      = false.obs;
 
-  final jobs      = <JobModel>[].obs;
-  final riwayat   = <RiwayatModel>[].obs;
-  final bahanBaku = <BahanBakuModel>[].obs;
-  final Rx<StatsModel?> stats = Rx(null);
+  final jobs    = <JobModel>[].obs;
+  final riwayat = <PenjahitRiwayatModel>[].obs;
+  final Rx<PenjahitStatsModel?> stats = Rx(null);
+  final navIndex = 0.obs;
 
   final Rx<File?>      fotoTerpilih = Rx(null);
   final Rx<Uint8List?> fotoBytesWeb = Rx(null);
-
-  // Bottom nav index
-  final navIndex = 0.obs;
 
   Map<String, String> get _headers => {
     'Authorization': 'Bearer ${TokenService.getToken()}',
@@ -43,23 +38,16 @@ class PemotongController extends GetxController {
   }
 
   Future<void> fetchAll() async {
-    await Future.wait([
-      fetchStats(),
-      fetchJobs(),
-      fetchRiwayat(),
-      fetchBahanBaku(),
-    ]);
+    await Future.wait([fetchStats(), fetchJobs(), fetchRiwayat()]);
   }
 
   Future<void> fetchStats() async {
     try {
       isLoadingStats.value = true;
       final res = await http.get(
-        Uri.parse(ApiConstants.pemotongStats),
-        headers: _headers,
-      );
+          Uri.parse(ApiConstants.penjahitStats), headers: _headers);
       if (res.statusCode == 200) {
-        stats.value = StatsModel.fromJson(jsonDecode(res.body));
+        stats.value = PenjahitStatsModel.fromJson(jsonDecode(res.body));
       }
     } catch (_) {} finally {
       isLoadingStats.value = false;
@@ -70,17 +58,13 @@ class PemotongController extends GetxController {
     try {
       isLoadingJobs.value = true;
       final res = await http.get(
-        Uri.parse(ApiConstants.pemotongJobs),
-        headers: _headers,
-      );
+          Uri.parse(ApiConstants.penjahitJobs), headers: _headers);
       if (res.statusCode == 200) {
         final List data = jsonDecode(res.body)['data'];
         jobs.value = data.map((e) => JobModel.fromJson(e)).toList();
-      } else {
-        Get.snackbar('Error', 'Gagal memuat jobs');
       }
     } catch (_) {
-      Get.snackbar('Error', 'Tidak dapat terhubung ke server');
+      Get.snackbar('Error', 'Gagal memuat jobs');
     } finally {
       isLoadingJobs.value = false;
     }
@@ -90,35 +74,16 @@ class PemotongController extends GetxController {
     try {
       isLoadingRiwayat.value = true;
       final res = await http.get(
-        Uri.parse(ApiConstants.pemotongRiwayat),
-        headers: _headers,
-      );
+          Uri.parse(ApiConstants.penjahitRiwayat), headers: _headers);
       if (res.statusCode == 200) {
         final List data = jsonDecode(res.body)['data'];
-        riwayat.value = data.map((e) => RiwayatModel.fromJson(e)).toList();
-      } else {
-        Get.snackbar('Error', 'Gagal memuat riwayat');
+        riwayat.value =
+            data.map((e) => PenjahitRiwayatModel.fromJson(e)).toList();
       }
     } catch (_) {
-      Get.snackbar('Error', 'Tidak dapat terhubung ke server');
+      Get.snackbar('Error', 'Gagal memuat riwayat');
     } finally {
       isLoadingRiwayat.value = false;
-    }
-  }
-
-  Future<void> fetchBahanBaku() async {
-    try {
-      isLoadingBahan.value = true;
-      final res = await http.get(
-        Uri.parse(ApiConstants.pemotongBahanBaku),
-        headers: _headers,
-      );
-      if (res.statusCode == 200) {
-        final List data = jsonDecode(res.body)['data'];
-        bahanBaku.value = data.map((e) => BahanBakuModel.fromJson(e)).toList();
-      }
-    } catch (_) {} finally {
-      isLoadingBahan.value = false;
     }
   }
 
@@ -139,9 +104,8 @@ class PemotongController extends GetxController {
   }
 
   Future<void> selesaikanJob(int jobId) async {
-    final adaFoto = kIsWeb
-        ? fotoBytesWeb.value != null
-        : fotoTerpilih.value != null;
+    final adaFoto =
+        kIsWeb ? fotoBytesWeb.value != null : fotoTerpilih.value != null;
 
     if (!adaFoto) {
       Get.snackbar('Peringatan', 'Pilih foto bukti dulu');
@@ -150,23 +114,20 @@ class PemotongController extends GetxController {
 
     try {
       isUploading.value = true;
-
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse(ApiConstants.pemotongSelesai(jobId)),
+        Uri.parse(ApiConstants.penjahitSelesai(jobId)),
       )..headers.addAll(_headers);
 
       if (kIsWeb) {
         request.files.add(http.MultipartFile.fromBytes(
           'foto_bukti',
           fotoBytesWeb.value!,
-          filename: 'bukti_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          filename: 'bukti_jahit_${DateTime.now().millisecondsSinceEpoch}.jpg',
         ));
       } else {
         request.files.add(await http.MultipartFile.fromPath(
-          'foto_bukti',
-          fotoTerpilih.value!.path,
-        ));
+            'foto_bukti', fotoTerpilih.value!.path));
       }
 
       final res  = await http.Response.fromStream(await request.send());
